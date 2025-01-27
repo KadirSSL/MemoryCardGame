@@ -1,2 +1,4 @@
 # MemoryCardGame
-Memory Card Game, Java ile geliştirilmiş klasik bir konsantrasyon oyunudur ve Swing GUI kullanır. Amaç, aynı kart çiftlerini eşleştirmektir. Oyun alanı, kullanıcı tarafından belirlenir ve üç eşit bölgeye ayrılır; kartlar her bölgede karıştırılır. Süre, alanın büyüklüğüne bağlıdır.  Credit: Sedat Golgiyaz
+The Memory Card Game is a classic concentration game developed in Java with a Swing GUI. The goal is to match pairs of identical cards. The game area is user-defined and divided into three equal sections with cards shuffled in each. Time varies with area size.
+
+Credit: Sedat Golgiyaz
