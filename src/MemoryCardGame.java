@@ -18,7 +18,7 @@ public class MemoryCardGame {//hatalı ama düzeltilecek
     private final boolean[] cardFlipped = new boolean[16]; // Kartların çevrilip çevrilmediğini tutacak dizi
     private final int[] cardValues = new int[16]; // Kartların değerlerini tutacak dizi
     private javax.swing.Timer timer; // Burada Timer'ı javax.swing.Timer olarak belirtiyoruz.
-    private int gridRows = 4;  // Grid satır sayısı
+    private int gridRows = 3;  // Grid satır sayısı
     private int gridColumns = 3;  // Grid sütun sayısı
 
     public static void main(String[] args) {
