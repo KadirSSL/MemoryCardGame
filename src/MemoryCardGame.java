@@ -5,7 +5,7 @@ import java.util.*;
 import java.util.List;
 import java.util.Timer;
 
-public class MemoryCardGame {
+public class MemoryCardGame {//hatalı ama düzeltilecek
     private static final int MAX_TIME = 60;  // Maksimum süre
     private int timeLeft;
     private int score;
