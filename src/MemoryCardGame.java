@@ -1,169 +1,158 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import javax.swing.Timer;
 import java.util.*;
 import java.util.List;
-import java.util.Timer;
 
-public class MemoryCardGame {//hatalı ama düzeltilecek
-    private static final int MAX_TIME = 60;  // Maksimum süre
-    private int timeLeft;
-    private int score;
-    private int matchCount;
-    private int firstCardIndex = -1;
-    private int secondCardIndex = -1;
-    private int thirdCardIndex = -1;
-    private final List<JButton> buttons = new ArrayList<>();
-    private final Color[] colors = new Color[16]; // Örnek kart renkleri
-    private final boolean[] cardFlipped = new boolean[16]; // Kartların çevrilip çevrilmediğini tutacak dizi
-    private final int[] cardValues = new int[16]; // Kartların değerlerini tutacak dizi
-    private javax.swing.Timer timer; // Burada Timer'ı javax.swing.Timer olarak belirtiyoruz.
-    private int gridRows = 3;  // Grid satır sayısı
-    private int gridColumns = 3;  // Grid sütun sayısı
+public class MemoryCardGame {
+    private final int satir;
+    private final int sutun;
+    private final JFrame frame;
+    private final JButton[][] kartlar;
+    private final Map<JButton, Point> kartKonumlari = new HashMap<>();
+    private final String[][] renkler;
+    private final List<JButton> secilenKartlar = new ArrayList<>();
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(MemoryCardGame::new);
+    // Rastgele renk üretici
+    private String generateRandomColor() {
+        Random rand = new Random();
+        int r = rand.nextInt(256); // 0-255 arası kırmızı
+        int g = rand.nextInt(256); // 0-255 arası yeşil
+        int b = rand.nextInt(256); // 0-255 arası mavi
+        return String.format("#%02X%02X%02X", r, g, b); // Hex formatına dönüştür
     }
 
-    public MemoryCardGame() {
-        JFrame frame = new JFrame("Memory Game");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLayout(new GridLayout(gridRows, gridColumns));
-
-        // Kartları oluştur
-        for (int i = 0; i < gridRows * gridColumns; i++) {
-            JButton button = new JButton();
-            button.setBackground(Color.BLACK);
-            button.addActionListener(new CardClickListener(i));
-            buttons.add(button);
-            frame.add(button);
-        }
-
-        // Kartları karıştır
+    public MemoryCardGame(int satir, int sutun) {
+        this.satir = satir;
+        this.sutun = sutun;
+        this.frame = new JFrame("Hafıza Kartları");
+        this.kartlar = new JButton[satir][sutun];
+        this.renkler = new String[satir][sutun];
         initializeGame();
-
-        // Oyunu başlat
-        startTimer();
-
-        frame.pack();
-        frame.setVisible(true);
     }
 
     private void initializeGame() {
-        // Kartları ve değerlerini belirle (örneğin 8 eşleşme, toplamda 16 kart)
-        List<Integer> values = new ArrayList<>();
-        for (int i = 0; i < gridRows * gridColumns / 2; i++) {
-            values.add(i);
-            values.add(i);
+        frame.setLayout(new GridLayout(satir, sutun));
+
+        // Bölge sayısını belirleyelim
+        int regionWidth = sutun / 3; // 3 eşit bölgeye ayırma
+
+        // Sütun * satır / 3 kadar renk üret
+        Set<String> renkSeti = new HashSet<>();
+        int totalColors = (sutun * satir) / 3;
+        while (renkSeti.size() < totalColors) {
+            renkSeti.add(generateRandomColor()); // Farklı renkler ekleniyor
         }
-        Collections.shuffle(values);
+        List<String> renkListesi = new ArrayList<>(renkSeti);
 
-        // Kart değerlerini atama
-        for (int i = 0; i < gridRows * gridColumns; i++) {
-            cardValues[i] = values.get(i);
-            colors[i] = new Color((int) (Math.random() * 0x1000000));  // Rastgele renkler
-            cardFlipped[i] = false;
-        }
-    }
+        // Renklerin her bölgeye benzersiz dağılması için bölge başına renkler yerleştirilecek
+        List<String> allRenkler = new ArrayList<>(renkListesi);
+        Collections.shuffle(allRenkler);  // Renkleri karıştır
 
-    private void startTimer() {
-        timeLeft = MAX_TIME;
-        score = 0;
-        matchCount = 0;
+        // Her bölgeye yerleştirilmek üzere renkler ayrılacak
+        List<String> region1Colors = new ArrayList<>(allRenkler.subList(0, totalColors / 3));
+        List<String> region2Colors = new ArrayList<>(allRenkler.subList(1, 2 * totalColors / 3));
+        List<String> region3Colors = new ArrayList<>(allRenkler.subList(2 , totalColors));
 
-        // Başlangıçta timer'ı başlat
-        timer = new javax.swing.Timer(1000, e -> {
-            timeLeft--;
-            if (timeLeft <= 0) {
-                endGame();
+        // Her bölgeye renkleri yerleştir
+        for (int region = 0; region < 3; region++) {
+            List<String> regionColors = new ArrayList<>();
+            if (region == 0) {
+                regionColors = region1Colors;
+            } else if (region == 1) {
+                regionColors = region2Colors;
+            } else {
+                regionColors = region3Colors;
             }
-        });
-        timer.start();
-    }
 
-    private void endGame() {
-        JOptionPane.showMessageDialog(null, "Game Over! Your score: " + score);
-        timer.stop();
-    }
-
-    private class CardClickListener implements ActionListener {
-        private final int index;
-
-        public CardClickListener(int index) {
-            this.index = index;
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (cardFlipped[index]) return; // Kart zaten çevrilmiş
-
-            // Kartı çevir
-            buttons.get(index).setBackground(colors[index]);
-            cardFlipped[index] = true;
-
-            // Eşleşme kontrolü için kartları seç
-            if (firstCardIndex == -1) {
-                firstCardIndex = index;
-            } else if (secondCardIndex == -1) {
-                secondCardIndex = index;
-            } else if (thirdCardIndex == -1) {
-                thirdCardIndex = index;
-                checkMatch();  // Üçüncü kartı seçtikten sonra eşleşme kontrolü yap
-            }
-        }
-    }
-
-    private void checkMatch() {
-        if (firstCardIndex == -1 || secondCardIndex == -1 || thirdCardIndex == -1) {
-            return;  // Üç kart seçilmeden işlem yapılmaz
-        }
-
-        // Üç kartın da aynı değeri taşıması durumunda eşleşme kabul edilir
-        if (cardValues[firstCardIndex] == cardValues[secondCardIndex] &&
-                cardValues[firstCardIndex] == cardValues[thirdCardIndex]) {
-
-            // Doğru eşleşme
-            score += 10;  // Puan artır
-            matchCount++; // Eşleşme sayısını artır
-
-            // Kartları beyaz yaparak eşleştiğini belirt
-            buttons.get(firstCardIndex).setBackground(Color.WHITE);
-            buttons.get(secondCardIndex).setBackground(Color.WHITE);
-            buttons.get(thirdCardIndex).setBackground(Color.WHITE);
-
-            // Kartları doğru olarak işaretle
-            cardFlipped[firstCardIndex] = true;
-            cardFlipped[secondCardIndex] = true;
-            cardFlipped[thirdCardIndex] = true;
-        } else {
-            // Yanlış eşleşme
-            score -= 3;  // Puanı düşür
-
-// Kartları geri çevirme
-            javax.swing.Timer pauseTimer = new javax.swing.Timer(1000, new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    buttons.get(firstCardIndex).setBackground(Color.BLACK);
-                    buttons.get(secondCardIndex).setBackground(Color.BLACK);
-                    buttons.get(thirdCardIndex).setBackground(Color.BLACK);
-                    cardFlipped[firstCardIndex] = false;
-                    cardFlipped[secondCardIndex] = false;
-                    cardFlipped[thirdCardIndex] = false;
+            // Bölgedeki kartlara renkleri eşit şekilde yerleştir
+            int colorIndex = 0;
+            for (int i = 0; i < satir; i++) {
+                for (int j = region * regionWidth; j < (region + 1) * regionWidth; j++) {
+                    renkler[i][j] = regionColors.get(colorIndex); // Renkleri her bölgeye benzersiz bir şekilde atıyoruz
+                    colorIndex = (colorIndex + 1) % regionColors.size();
                 }
+            }
+        }
+
+        // Kartları oluştur ve yerleştir
+        for (int i = 0; i < satir; i++) {
+            for (int j = 0; j < sutun; j++) {
+                JButton kart = new JButton();
+                kart.setBackground(Color.LIGHT_GRAY);
+                kartKonumlari.put(kart, new Point(i, j));
+                kart.addActionListener(this::kartAc);
+                kartlar[i][j] = kart;
+                frame.add(kart);
+            }
+        }
+
+        frame.setSize(600, 600);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+    }
+
+    private void kartAc(ActionEvent e) {
+        JButton tiklananKart = (JButton) e.getSource();
+        Point konum = kartKonumlari.get(tiklananKart);
+        if (konum == null || secilenKartlar.contains(tiklananKart)) {
+            return;
+        }
+
+        // Kartın arka planını renk koduna göre değiştir
+        tiklananKart.setBackground(Color.decode(renkler[konum.x][konum.y]));
+        secilenKartlar.add(tiklananKart);
+
+        if (secilenKartlar.size() == 3) {
+            kontrolEt();
+        }
+    }
+
+    private void kontrolEt() {
+        if (secilenKartlar.size() < 3) return;
+        JButton kart1 = secilenKartlar.get(0);
+        JButton kart2 = secilenKartlar.get(1);
+        JButton kart3 = secilenKartlar.get(2);
+
+        Point p1 = kartKonumlari.get(kart1);
+        Point p2 = kartKonumlari.get(kart2);
+        Point p3 = kartKonumlari.get(kart3);
+
+        if (p1 == null || p2 == null || p3 == null) return;
+
+        // Eğer 3 kart eşleşiyorsa
+        if (renkler[p1.x][p1.y].equals(renkler[p2.x][p2.y]) && renkler[p1.x][p1.y].equals(renkler[p3.x][p3.y])) {
+            kart1.setEnabled(false);
+            kart2.setEnabled(false);
+            kart3.setEnabled(false);
+        } else {
+            Timer timer = new Timer(500, e -> {
+                kart1.setBackground(Color.LIGHT_GRAY);
+                kart2.setBackground(Color.LIGHT_GRAY);
+                kart3.setBackground(Color.LIGHT_GRAY);
             });
-            pauseTimer.setRepeats(false);
-            pauseTimer.start();
-
+            timer.setRepeats(false);
+            timer.start();
         }
+        secilenKartlar.clear();
+    }
 
-        // Kartları sıfırla
-        firstCardIndex = -1;
-        secondCardIndex = -1;
-        thirdCardIndex = -1;
-
-        // Tüm eşleşmeler tamamlandığında oyunu bitir
-        if (matchCount == (gridRows * gridColumns) / 3) {
-            endGame();
-        }
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            int satir = Integer.parseInt(JOptionPane.showInputDialog("Satır sayısını giriniz:"));
+            int sutun = Integer.parseInt(JOptionPane.showInputDialog("Sütun sayısını giriniz (3 ün katı olmalı):"));
+            while (sutun % 3 != 0) {
+                try {
+                    sutun = Integer.parseInt(JOptionPane.showInputDialog("Sütun sayısını giriniz (3'e bölünebilir):"));
+                    if (sutun % 3 != 0) {
+                        JOptionPane.showMessageDialog(null, "Hata! Sütun sayısı 3'e bölünebilir olmalıdır.");
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(null, "Lütfen geçerli bir sayı giriniz.");
+                }
+            }
+            new MemoryCardGame(satir, sutun);
+        });
     }
 }
